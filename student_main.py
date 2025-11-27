@@ -5,7 +5,9 @@ from embroidery_turtle import EmbroideryTurtle, export_to_embroidery
 
 # ----- SETTINGS STUDENTS CAN CHANGE -----
 
-SCALE = 10               # ← try 3, 5, 8, 10 to make it bigger/smaller
+HOOP_SIZE_MM = 1500          # actual hoop is 150 cm = 1500 mm
+WORLD_SIZE_UNITS = 150       # keep drawing grid at 150 units
+SCALE = HOOP_SIZE_MM / WORLD_SIZE_UNITS  # auto-scale turtle units to hoop mm
 MAX_STITCH_MM = 3.0
 PES_FILENAME = "student_design.pes"
 PNG_FILENAME = "student_design.png"
@@ -16,8 +18,8 @@ screen = turtle.Screen()
 screen.setup(800, 800)
 screen.title("Embroidery Turtle – with Scaling")
 
-# Hoop is still 150×150 mm, but turtle units are scaled later:
-screen.setworldcoordinates(0, 0, 150, 150)
+# Map a 150-unit grid onto the 150 cm (1500 mm) hoop.
+screen.setworldcoordinates(0, 0, WORLD_SIZE_UNITS, WORLD_SIZE_UNITS)
 
 t = EmbroideryTurtle()
 t.speed(1)
