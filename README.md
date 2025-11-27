@@ -4,6 +4,8 @@ Friendly web app for drawing simple turtle commands and exporting PES/PNG for a 
 
 ![Embroidery turtle example](images/turtle_embroider.png)
 
+Embroidery: the art of decorating fabric with a needle and thread. Visual reference: ![Embroidery machine](https://www.brothersewingshop.co.uk/image/cache/catalog/Brother/F540E-500x500.jpg)
+
 ## What’s inside
 
 - Frontend: static HTML/CSS/JS (`static/index.html`). Edit commands or a simple turtle-style script and export PES/PNG.
