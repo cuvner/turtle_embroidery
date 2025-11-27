@@ -1,6 +1,8 @@
 # Embroidery Turtle Web App
 
-Friendly web app for drawing simple turtle commands and exporting PES/PNG for a 150 cm hoop (10 mm per turtle unit).
+This is a web app for drawing simple turtle commands that can be embroided onto fabric. The idea came from a computing class; we were making spirograph type designs with the python library turtle. The webapp can be used to create patterns with for loops and basic turtle movements. You can export PES/PNG for a 150 cm hoop (10 mm per pixel of movement).
+
+The idea has been built on the [pyembroidery](https://github.com/EmbroidePy/pyembroidery) library by Tatarize, however, if it wasn't for [Pembroider](https://github.com/CreativeInquiry/PEmbroider) I would have never known about the python library.
 
 ![Embroidery turtle example](images/turtle_embroider.png)
 
@@ -28,7 +30,9 @@ Embroidery: the art of decorating fabric with a needle and thread. Visual refere
    ```
 
 ### Render / headless deploy note
+
 The backend is headless and avoids Tkinter by using `embroidery_utils.py`. No GUI is needed on the server; deploy with:
+
 ```bash
 uvicorn server:app --host 0.0.0.0 --port $PORT
 ```
