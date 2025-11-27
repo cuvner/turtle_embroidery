@@ -4,7 +4,7 @@ This is a web app for drawing simple turtle commands that can be embroided onto 
 
 The idea has been built on the [pyembroidery](https://github.com/EmbroidePy/pyembroidery) library by Tatarize, however, if it wasn't for [Pembroider](https://github.com/CreativeInquiry/PEmbroider) I would have never known about the python library.
 
-![Embroidery turtle example](images/turtle_embroider.png)
+![Embroidery turtle example](images/turtle_embroider_readme.png)
 
 Embroidery: the art of decorating fabric with a needle and thread. Visual reference: ![Embroidery machine](https://www.brothersewingshop.co.uk/image/cache/catalog/Brother/F540E-500x500.jpg)
 
