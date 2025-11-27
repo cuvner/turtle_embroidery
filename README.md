@@ -23,6 +23,12 @@ Friendly web app for drawing simple turtle commands and exporting PES/PNG for a 
    pip install -r requirements.txt
    ```
 
+### Render / headless deploy note
+The backend is headless and avoids Tkinter by using `embroidery_utils.py`. No GUI is needed on the server; deploy with:
+```bash
+uvicorn server:app --host 0.0.0.0 --port $PORT
+```
+
 ## Run the app
 
 ```bash

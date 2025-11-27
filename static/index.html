@@ -164,6 +164,14 @@
         <label>Script (basic turtle, supports for range loops)</label>
         <textarea id="script"></textarea>
       </div>
+      <div class="card">
+        <label>Available commands</label>
+        <div style="font-family: var(--mono); font-size: 13px; color: var(--muted); line-height: 1.6;">
+          forward(x), backward(x), left(deg), right(deg)<br>
+          penup(), pendown(), goto(x, y)<br>
+          loops: for i in range(N): (indent commands under it)
+        </div>
+      </div>
     </div>
   </div>
 
@@ -209,6 +217,46 @@ for i in range(8):
       statusEl.textContent = 'Loaded sample script.';
       downloadsEl.innerHTML = '';
     });
+
+    const enableTabIndent = (el) => {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const start = el.selectionStart;
+          const end = el.selectionEnd;
+          const value = el.value;
+          el.value = value.substring(0, start) + '    ' + value.substring(end);
+          el.selectionStart = el.selectionEnd = start + 4;
+        }
+      });
+    };
+
+    enableTabIndent(scriptInput);
+    enableTabIndent(commandsInput);
+
+    const enableAutoIndentAfterColon = (el) => {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const pos = el.selectionStart;
+          const value = el.value;
+          const prevNewline = value.lastIndexOf('\n', pos - 1);
+          const lineStart = prevNewline === -1 ? 0 : prevNewline + 1;
+          const line = value.slice(lineStart, pos);
+          const indentMatch = line.match(/^\s*/);
+          const baseIndent = indentMatch ? indentMatch[0] : '';
+          const extraIndent = line.trimEnd().endsWith(':') ? '    ' : '';
+          if (extraIndent) {
+            e.preventDefault();
+            const insert = '\n' + baseIndent + extraIndent;
+            el.value = value.slice(0, pos) + insert + value.slice(el.selectionEnd);
+            const newPos = pos + insert.length;
+            el.selectionStart = el.selectionEnd = newPos;
+          }
+        }
+      });
+    };
+
+    enableAutoIndentAfterColon(scriptInput);
 
     const b64ToBlob = (b64, mime) => {
       const byteChars = atob(b64);

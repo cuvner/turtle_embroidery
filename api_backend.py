@@ -15,7 +15,7 @@ from pathlib import Path
 import ast
 from typing import Dict, Iterable, List, Tuple
 
-from embroidery_turtle import densify_points
+from embroidery_utils import densify_points
 from pyembroidery import EmbPattern, write_pes, write_png
 
 
