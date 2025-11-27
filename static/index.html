@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Embroidery Turtle Studio</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --accent: #22c55e;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #1f2937;
+      --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: "Space Grotesk", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 20%, rgba(34,197,94,0.08), transparent 45%),
+                  radial-gradient(circle at 80% 10%, rgba(14,165,233,0.1), transparent 40%),
+                  radial-gradient(circle at 50% 80%, rgba(99,102,241,0.08), transparent 40%),
+                  var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      display: flex;
+      justify-content: center;
+      padding: 32px 16px 64px;
+      box-sizing: border-box;
+    }
+    .shell {
+      width: min(1100px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 28px;
+      letter-spacing: -0.03em;
+    }
+    p {
+      margin: 0 0 16px;
+      color: var(--muted);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: #0b1221;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    input, textarea, button {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0a1220;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      padding: 10px 12px;
+      box-sizing: border-box;
+    }
+    textarea {
+      min-height: 280px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+    button {
+      cursor: pointer;
+      background: linear-gradient(120deg, var(--accent), #16a34a);
+      color: #052e16;
+      font-weight: 700;
+      border: none;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 30px rgba(34,197,94,0.25);
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+    }
+    .row button {
+      flex: 1;
+      background: #0a1628;
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: none;
+      font-weight: 600;
+    }
+    .row button.primary {
+      background: linear-gradient(120deg, var(--accent), #16a34a);
+      color: #052e16;
+      border: none;
+    }
+    .status {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--muted);
+      min-height: 20px;
+    }
+    .downloads a {
+      color: var(--accent);
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .downloads {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h1>Embroidery Turtle Studio</h1>
+    <p>Define turtle commands, send them to the API, and download PES/PNG for the 150 cm hoop. Coordinates still use a 150-unit grid (10 mm per unit).</p>
+    <div class="grid">
+      <div class="card">
+        <label>Scale (mm per turtle unit)
+          <input id="scale" type="number" step="0.1" value="10">
+        </label>
+        <label>Max stitch length (mm)
+          <input id="maxStitch" type="number" step="0.1" value="3">
+        </label>
+        <div class="row">
+          <button id="loadSample" type="button">Load sample star</button>
+          <button id="export" class="primary" type="button">Export PES/PNG</button>
+        </div>
+        <div class="row">
+          <button id="loadScript" type="button">Load sample script</button>
+          <button id="exportScript" class="primary" type="button">Run script → PES/PNG</button>
+        </div>
+        <div class="status" id="status"></div>
+        <div class="downloads" id="downloads"></div>
+      </div>
+      <div class="card">
+        <label>Commands (JSON array)</label>
+        <textarea id="commands"></textarea>
+      </div>
+      <div class="card">
+        <label>Script (basic turtle, supports for range loops)</label>
+        <textarea id="script"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const commandsInput = document.getElementById('commands');
+    const scriptInput = document.getElementById('script');
+    const statusEl = document.getElementById('status');
+    const downloadsEl = document.getElementById('downloads');
+
+    const sampleCommands = () => ([
+      { op: 'penup' },
+      { op: 'goto', x: 65, y: 85 },
+      { op: 'pendown' },
+      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
+      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
+      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
+      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
+      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
+      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
+      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
+      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
+    ]);
+
+    commandsInput.value = JSON.stringify(sampleCommands(), null, 2);
+
+    const sampleScript = `penup()
+goto(65, 85)
+pendown()
+for i in range(8):
+    forward(20)
+    right(45)
+`;
+    scriptInput.value = sampleScript;
+
+    document.getElementById('loadSample').addEventListener('click', () => {
+      commandsInput.value = JSON.stringify(sampleCommands(), null, 2);
+      statusEl.textContent = 'Loaded sample star.';
+      downloadsEl.innerHTML = '';
+    });
+
+    document.getElementById('loadScript').addEventListener('click', () => {
+      scriptInput.value = sampleScript;
+      statusEl.textContent = 'Loaded sample script.';
+      downloadsEl.innerHTML = '';
+    });
+
+    const b64ToBlob = (b64, mime) => {
+      const byteChars = atob(b64);
+      const byteNumbers = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) {
+        byteNumbers[i] = byteChars.charCodeAt(i);
+      }
+      return new Blob([new Uint8Array(byteNumbers)], { type: mime });
+    };
+
+    const setStatus = (msg) => {
+      statusEl.textContent = msg;
+    };
+
+    const renderDownloads = (pesB64, pngB64) => {
+      const pesBlob = b64ToBlob(pesB64, 'application/octet-stream');
+      const pngBlob = b64ToBlob(pngB64, 'image/png');
+      const pesUrl = URL.createObjectURL(pesBlob);
+      const pngUrl = URL.createObjectURL(pngBlob);
+      downloadsEl.innerHTML = '';
+
+      const pesLink = document.createElement('a');
+      pesLink.href = pesUrl;
+      pesLink.download = 'design.pes';
+      pesLink.textContent = 'Download PES';
+
+      const pngLink = document.createElement('a');
+      pngLink.href = pngUrl;
+      pngLink.download = 'design.png';
+      pngLink.textContent = 'Download PNG';
+
+      downloadsEl.appendChild(pesLink);
+      downloadsEl.appendChild(document.createTextNode(' '));
+      downloadsEl.appendChild(pngLink);
+    };
+
+    document.getElementById('export').addEventListener('click', async () => {
+      let commands;
+      try {
+        commands = JSON.parse(commandsInput.value);
+        if (!Array.isArray(commands)) {
+          throw new Error('Commands must be an array');
+        }
+      } catch (err) {
+        setStatus('Invalid JSON: ' + err.message);
+        return;
+      }
+
+      setStatus('Exporting…');
+      downloadsEl.innerHTML = '';
+
+      const payload = {
+        commands,
+        scale_mm: parseFloat(document.getElementById('scale').value) || 10,
+        max_stitch_mm: parseFloat(document.getElementById('maxStitch').value) || 3,
+      };
+
+      try {
+        const res = await fetch('/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Request failed');
+        }
+
+        const data = await res.json();
+        renderDownloads(data.pes_base64, data.png_base64);
+        setStatus(`Ready. Stitches: ${data.stitch_count}`);
+      } catch (err) {
+        setStatus('Error: ' + err.message);
+      }
+    });
+
+    document.getElementById('exportScript').addEventListener('click', async () => {
+      setStatus('Running script…');
+      downloadsEl.innerHTML = '';
+
+      const payload = {
+        script: scriptInput.value,
+        scale_mm: parseFloat(document.getElementById('scale').value) || 10,
+        max_stitch_mm: parseFloat(document.getElementById('maxStitch').value) || 3,
+      };
+
+      try {
+        const res = await fetch('/export_script', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Request failed');
+        }
+        const data = await res.json();
+        commandsInput.value = JSON.stringify(data.commands, null, 2);
+        renderDownloads(data.pes_base64, data.png_base64);
+        setStatus(`Ready from script. Stitches: ${data.stitch_count}`);
+      } catch (err) {
+        setStatus('Error: ' + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
