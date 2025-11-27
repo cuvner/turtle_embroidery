@@ -2,6 +2,8 @@
 
 Friendly web app for drawing simple turtle commands and exporting PES/PNG for a 150 cm hoop (10 mm per turtle unit).
 
+![Embroidery turtle example](images/turtle_embroider.png)
+
 ## What’s inside
 
 - Frontend: static HTML/CSS/JS (`static/index.html`). Edit commands or a simple turtle-style script and export PES/PNG.

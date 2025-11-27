@@ -37,6 +37,17 @@
       padding: 24px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.35);
     }
+    .hero-img {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .hero-block {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
     h1 {
       margin: 0 0 12px;
       font-size: 28px;
@@ -48,7 +59,7 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
       gap: 16px;
     }
     .card {
@@ -136,33 +147,22 @@
 <body>
   <div class="shell">
     <h1>Embroidery Turtle Studio</h1>
-    <p>Define turtle commands, send them to the API, and download PES/PNG for the 150 cm hoop. Coordinates still use a 150-unit grid (10 mm per unit).</p>
+    <p>Write a simple turtle script and export PES/PNG. Coordinates use a 150-unit grid (10 mm per unit) for the 150 cm hoop.</p>
     <div class="grid">
       <div class="card">
-        <label>Scale (mm per turtle unit)
-          <input id="scale" type="number" step="0.1" value="10">
-        </label>
-        <label>Max stitch length (mm)
-          <input id="maxStitch" type="number" step="0.1" value="3">
-        </label>
-        <div class="row">
-          <button id="loadSample" type="button">Load sample star</button>
-          <button id="export" class="primary" type="button">Export PES/PNG</button>
+        <div class="hero-block">
+          <img class="hero-img" src="/images/turtle_embroider.png" alt="Embroidery turtle example">
+          <div>
+            <label>Script (basic turtle)</label>
+            <textarea id="script"></textarea>
+          </div>
         </div>
         <div class="row">
-          <button id="loadScript" type="button">Load sample script</button>
+          <button id="loadScript" type="button">Load sample octagon</button>
           <button id="exportScript" class="primary" type="button">Run script → PES/PNG</button>
         </div>
         <div class="status" id="status"></div>
         <div class="downloads" id="downloads"></div>
-      </div>
-      <div class="card">
-        <label>Commands (JSON array)</label>
-        <textarea id="commands"></textarea>
-      </div>
-      <div class="card">
-        <label>Script (basic turtle, supports for range loops)</label>
-        <textarea id="script"></textarea>
       </div>
       <div class="card">
         <label>Available commands</label>
@@ -176,28 +176,15 @@
   </div>
 
   <script>
-    const commandsInput = document.getElementById('commands');
     const scriptInput = document.getElementById('script');
     const statusEl = document.getElementById('status');
     const downloadsEl = document.getElementById('downloads');
 
-    const sampleCommands = () => ([
-      { op: 'penup' },
-      { op: 'goto', x: 65, y: 85 },
-      { op: 'pendown' },
-      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
-      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
-      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
-      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
-      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
-      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
-      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
-      { op: 'forward', value: 20 }, { op: 'right', value: 45 },
-    ]);
+    const defaultScale = 10;
+    const defaultMaxStitch = 3;
 
-    commandsInput.value = JSON.stringify(sampleCommands(), null, 2);
-
-    const sampleScript = `penup()
+    const sampleScript = `# Octagon: 8 sides, turn 45° each step
+penup()
 goto(65, 85)
 pendown()
 for i in range(8):
@@ -206,15 +193,9 @@ for i in range(8):
 `;
     scriptInput.value = sampleScript;
 
-    document.getElementById('loadSample').addEventListener('click', () => {
-      commandsInput.value = JSON.stringify(sampleCommands(), null, 2);
-      statusEl.textContent = 'Loaded sample star.';
-      downloadsEl.innerHTML = '';
-    });
-
     document.getElementById('loadScript').addEventListener('click', () => {
       scriptInput.value = sampleScript;
-      statusEl.textContent = 'Loaded sample script.';
+      statusEl.textContent = 'Loaded sample octagon.';
       downloadsEl.innerHTML = '';
     });
 
@@ -232,7 +213,6 @@ for i in range(8):
     };
 
     enableTabIndent(scriptInput);
-    enableTabIndent(commandsInput);
 
     const enableAutoIndentAfterColon = (el) => {
       el.addEventListener('keydown', (e) => {
@@ -293,55 +273,14 @@ for i in range(8):
       downloadsEl.appendChild(pngLink);
     };
 
-    document.getElementById('export').addEventListener('click', async () => {
-      let commands;
-      try {
-        commands = JSON.parse(commandsInput.value);
-        if (!Array.isArray(commands)) {
-          throw new Error('Commands must be an array');
-        }
-      } catch (err) {
-        setStatus('Invalid JSON: ' + err.message);
-        return;
-      }
-
-      setStatus('Exporting…');
-      downloadsEl.innerHTML = '';
-
-      const payload = {
-        commands,
-        scale_mm: parseFloat(document.getElementById('scale').value) || 10,
-        max_stitch_mm: parseFloat(document.getElementById('maxStitch').value) || 3,
-      };
-
-      try {
-        const res = await fetch('/export', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || 'Request failed');
-        }
-
-        const data = await res.json();
-        renderDownloads(data.pes_base64, data.png_base64);
-        setStatus(`Ready. Stitches: ${data.stitch_count}`);
-      } catch (err) {
-        setStatus('Error: ' + err.message);
-      }
-    });
-
     document.getElementById('exportScript').addEventListener('click', async () => {
       setStatus('Running script…');
       downloadsEl.innerHTML = '';
 
       const payload = {
         script: scriptInput.value,
-        scale_mm: parseFloat(document.getElementById('scale').value) || 10,
-        max_stitch_mm: parseFloat(document.getElementById('maxStitch').value) || 3,
+        scale_mm: defaultScale,
+        max_stitch_mm: defaultMaxStitch,
       };
 
       try {
@@ -355,7 +294,6 @@ for i in range(8):
           throw new Error(err.detail || 'Request failed');
         }
         const data = await res.json();
-        commandsInput.value = JSON.stringify(data.commands, null, 2);
         renderDownloads(data.pes_base64, data.png_base64);
         setStatus(`Ready from script. Stitches: ${data.stitch_count}`);
       } catch (err) {

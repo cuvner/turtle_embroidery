@@ -13,6 +13,7 @@ from api_backend import generate_from_commands, script_to_commands
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
+IMAGES_DIR = BASE_DIR / "images"
 
 
 class CommandModel(BaseModel):
@@ -102,3 +103,6 @@ def export_script(req: ScriptRequest):
 
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+if IMAGES_DIR.exists():
+    app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
