@@ -31,3 +31,57 @@ def densify_points(points: List[Tuple[float, float]], max_step_units: float):
 
     return dense
 
+
+<<<<<<< ours
+def _calc_center(points: List[Tuple[float, float]]) -> Tuple[float, float]:
+    if not points:
+        return (0.0, 0.0)
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    cx = (min(xs) + max(xs)) / 2
+    cy = (min(ys) + max(ys)) / 2
+    return (cx, cy)
+
+
+def center_points(points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+    """Translate points so the design is centered around the origin."""
+    if not points:
+        return []
+    cx, cy = _calc_center(points)
+    return [(x - cx, y - cy) for x, y in points]
+
+
+def center_points_with_offset(points: List[Tuple[float, float]]) -> Tuple[List[Tuple[float, float]], Tuple[float, float]]:
+    """Return centered points along with the offset that was applied."""
+    centered = center_points(points)
+    cx, cy = _calc_center(points)
+    return centered, (cx, cy)
+
+
+def center_stitches(stitches: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    """Center integer stitches around (0,0) to keep PES previews aligned."""
+    if not stitches:
+        return []
+
+    xs = [s[0] for s in stitches]
+    ys = [s[1] for s in stitches]
+    cx = (min(xs) + max(xs)) / 2.0
+    cy = (min(ys) + max(ys)) / 2.0
+
+    return [(int(round(x - cx)), int(round(y - cy))) for x, y in stitches]
+=======
+def center_points(points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+    """Translate points so their bounding box is centered on the origin."""
+
+    if not points:
+        return []
+
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+
+    center_x = (min(xs) + max(xs)) / 2.0
+    center_y = (min(ys) + max(ys)) / 2.0
+
+    return [(x - center_x, y - center_y) for x, y in points]
+
+>>>>>>> theirs

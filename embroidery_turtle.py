@@ -4,7 +4,11 @@ import turtle
 import math
 import os
 from pyembroidery import EmbPattern, write_pes, write_png
-from embroidery_utils import densify_points
+<<<<<<< ours
+from embroidery_utils import center_points, center_stitches, densify_points
+=======
+from embroidery_utils import center_points, densify_points
+>>>>>>> theirs
 
 
 class EmbroideryTurtle(turtle.Turtle):
@@ -57,16 +61,18 @@ def export_to_embroidery(
 ):
     """Convert turtle units → mm using scale_mm."""
 
-    points = t.stitch_points
+    points = center_points(t.stitch_points)
 
     if len(points) < 2:
         print("Not enough points to make stitches.")
         return
 
+    centered_points = center_points(points)
+
     # Convert max stitch length (mm) → turtle units
     max_step_units = max_stitch_mm / scale_mm
 
-    dense_points = densify_points(points, max_step_units=max_step_units)
+    dense_points = densify_points(centered_points, max_step_units=max_step_units)
 
     stitches = []
     for x, y in dense_points:
@@ -74,15 +80,18 @@ def export_to_embroidery(
         ey = int(-y * scale_mm)  # invert y
         stitches.append((ex, ey))
 
+    centered_stitches = center_stitches(stitches)
+
     pattern = EmbPattern()
-    pattern.add_block(stitches)
+    pattern.add_block(centered_stitches)
+    pattern.move_center_to_origin()
 
     write_pes(pattern, pes_filename)
     write_png(pattern, png_filename)
 
     print(f"Saved PES : {os.path.abspath(pes_filename)}")
     print(f"Saved PNG : {os.path.abspath(png_filename)}")
-    print(f"Stitches  : {len(stitches)}")
+    print(f"Stitches  : {len(centered_stitches)}")
 
     if show_preview:
         try:

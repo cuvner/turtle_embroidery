@@ -367,12 +367,14 @@ for i in range(8):
     let animationFrame = null;
     let animationTimer = null;
 
-    const buildSegments = (commands) => {
+    const buildSegments = (commands, centerOffset) => {
       const segments = [];
       let x = 0;
       let y = 0;
       let heading = 0;
       let penDown = false;
+      const offsetX = Number(centerOffset?.x || 0);
+      const offsetY = Number(centerOffset?.y || 0);
 
       commands.forEach(cmd => {
         const op = (cmd.op || '').toLowerCase();
@@ -384,14 +386,14 @@ for i in range(8):
         } else if (op === 'goto') {
           const nx = Number(cmd.x || 0);
           const ny = Number(cmd.y || 0);
-          if (penDown) segments.push({ from: [x, y], to: [nx, ny] });
+          if (penDown) segments.push({ from: [x - offsetX, y - offsetY], to: [nx - offsetX, ny - offsetY] });
           x = nx; y = ny;
         } else if (op === 'forward' || op === 'backward') {
           const distance = op === 'forward' ? val : -val;
           const rad = heading * Math.PI / 180;
           const nx = x + Math.cos(rad) * distance;
           const ny = y + Math.sin(rad) * distance;
-          if (penDown) segments.push({ from: [x, y], to: [nx, ny] });
+          if (penDown) segments.push({ from: [x - offsetX, y - offsetY], to: [nx - offsetX, ny - offsetY] });
           x = nx; y = ny;
         } else if (op === 'left') {
           heading += val;
@@ -408,21 +410,52 @@ for i in range(8):
       const w = previewCanvas.width;
       const h = previewCanvas.height;
       ctx.clearRect(0, 0, w, h);
-      ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 2;
-
-      const GRID = 150;
-      const padding = 20;
-      const scale = Math.min((w - 2 * padding) / GRID, (h - 2 * padding) / GRID);
-      const toCanvas = (tx, ty) => {
-        const cx = padding + tx * scale;
-        const cy = h - (padding + ty * scale);
-        return [cx, cy];
-      };
 
       if (animationFrame) cancelAnimationFrame(animationFrame);
       if (animationTimer) clearInterval(animationTimer);
 
+      if (!segments.length) {
+        previewStatus.textContent = 'No stitches to preview.';
+        return;
+      }
+
+      const GRID = 150;
+      const padding = 32;
+      const xs = segments.flatMap(s => [s.from[0], s.to[0]]);
+      const ys = segments.flatMap(s => [s.from[1], s.to[1]]);
+      const rangeX = Math.max(...xs) - Math.min(...xs);
+      const rangeY = Math.max(...ys) - Math.min(...ys);
+      const designSpan = Math.max(rangeX, rangeY, 1);
+      const targetSpan = Math.max(GRID, designSpan * 1.1);
+      const scale = Math.min((w - 2 * padding) / targetSpan, (h - 2 * padding) / targetSpan);
+
+      const toCanvas = (tx, ty) => {
+        const cx = w / 2 + tx * scale;
+        const cy = h / 2 - ty * scale;
+        return [cx, cy];
+      };
+
+      // crosshair + hoop guide
+      ctx.strokeStyle = 'rgba(148,163,184,0.35)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(w / 2, padding / 2);
+      ctx.lineTo(w / 2, h - padding / 2);
+      ctx.moveTo(padding / 2, h / 2);
+      ctx.lineTo(w - padding / 2, h / 2);
+      ctx.stroke();
+      ctx.beginPath();
+      const [gx0, gy0] = toCanvas(-GRID / 2, -GRID / 2);
+      const [gx1, gy1] = toCanvas(GRID / 2, GRID / 2);
+      ctx.rect(gx0, gy1, gx1 - gx0, gy0 - gy1);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#22c55e';
+      ctx.fill();
+
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 2;
       let i = 0;
       animationTimer = setInterval(() => {
         if (i >= segments.length) {
@@ -441,13 +474,14 @@ for i in range(8):
       }, 60);
     };
 
-    const openPreview = (commands) => {
+    const openPreview = (data) => {
       previewModal.style.display = 'flex';
       previewStatus.textContent = 'Previewing…';
       const rect = previewCanvas.getBoundingClientRect();
       previewCanvas.width = rect.width;
       previewCanvas.height = rect.height;
-      const segments = buildSegments(commands);
+      const centerOffset = data.center_offset || { x: 0, y: 0 };
+      const segments = buildSegments(data.commands, centerOffset);
       drawAnimated(segments);
       previewStatus.textContent = `Preview ready (segments: ${segments.length})`;
     };
@@ -484,8 +518,8 @@ for i in range(8):
           throw new Error(err.detail || 'Request failed');
         }
         const data = await res.json();
-        openPreview(data.commands);
-        setStatus('Preview ready.');
+        openPreview(data);
+        setStatus(`Preview ready. Stitches: ${data.stitch_count || 'n/a'}`);
       } catch (err) {
         setStatus('Preview error: ' + err.message);
       }

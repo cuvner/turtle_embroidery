@@ -15,7 +15,11 @@ from pathlib import Path
 import ast
 from typing import Dict, Iterable, List, Tuple
 
-from embroidery_utils import densify_points
+<<<<<<< ours
+from embroidery_utils import center_points_with_offset, center_stitches, densify_points
+=======
+from embroidery_utils import center_points, densify_points
+>>>>>>> theirs
 from pyembroidery import EmbPattern, write_pes, write_png
 
 
@@ -196,11 +200,15 @@ def points_to_outputs(
 ) -> Dict[str, object]:
     """Convert points to PES/PNG bytes and stitch metadata."""
 
-    if len(points) < 2:
+    centered_points, center_offset = center_points_with_offset(points)
+
+    if len(centered_points) < 2:
         raise ValueError("At least two points are required to make stitches")
 
+    centered_points = center_points(points)
+
     max_step_units = max_stitch_mm / scale_mm
-    dense_points = densify_points(points, max_step_units=max_step_units)
+    dense_points = densify_points(centered_points, max_step_units=max_step_units)
 
     stitches = []
     for x, y in dense_points:
@@ -208,8 +216,11 @@ def points_to_outputs(
         ey = int(-y * scale_mm)
         stitches.append((ex, ey))
 
+    centered_stitches = center_stitches(stitches)
+
     pattern = EmbPattern()
-    pattern.add_block(stitches)
+    pattern.add_block(centered_stitches)
+    pattern.move_center_to_origin()
 
     with tempfile.TemporaryDirectory() as tmpdir:
         pes_path = os.path.join(tmpdir, "design.pes")
@@ -224,7 +235,9 @@ def points_to_outputs(
     return {
         "pes_base64": base64.b64encode(pes_bytes).decode("ascii"),
         "png_base64": base64.b64encode(png_bytes).decode("ascii"),
-        "stitch_count": len(stitches),
+        "stitch_count": len(centered_stitches),
+        "center_offset": {"x": center_offset[0], "y": center_offset[1]},
+        "centered_points": [[x, y] for x, y in centered_points],
     }
 
 
