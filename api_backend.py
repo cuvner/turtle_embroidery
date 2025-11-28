@@ -15,7 +15,7 @@ from pathlib import Path
 import ast
 from typing import Dict, Iterable, List, Tuple
 
-from embroidery_utils import densify_points
+from embroidery_utils import center_points, densify_points
 from pyembroidery import EmbPattern, write_pes, write_png
 
 
@@ -199,8 +199,10 @@ def points_to_outputs(
     if len(points) < 2:
         raise ValueError("At least two points are required to make stitches")
 
+    centered_points = center_points(points)
+
     max_step_units = max_stitch_mm / scale_mm
-    dense_points = densify_points(points, max_step_units=max_step_units)
+    dense_points = densify_points(centered_points, max_step_units=max_step_units)
 
     stitches = []
     for x, y in dense_points:

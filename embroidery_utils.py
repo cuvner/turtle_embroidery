@@ -31,3 +31,18 @@ def densify_points(points: List[Tuple[float, float]], max_step_units: float):
 
     return dense
 
+
+def center_points(points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+    """Translate points so their bounding box is centered on the origin."""
+
+    if not points:
+        return []
+
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+
+    center_x = (min(xs) + max(xs)) / 2.0
+    center_y = (min(ys) + max(ys)) / 2.0
+
+    return [(x - center_x, y - center_y) for x, y in points]
+
