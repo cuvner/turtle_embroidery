@@ -4,7 +4,7 @@ import turtle
 import math
 import os
 from pyembroidery import EmbPattern, write_pes, write_png
-from embroidery_utils import densify_points
+from embroidery_utils import center_points, densify_points
 
 
 class EmbroideryTurtle(turtle.Turtle):
@@ -57,7 +57,7 @@ def export_to_embroidery(
 ):
     """Convert turtle units → mm using scale_mm."""
 
-    points = t.stitch_points
+    points = center_points(t.stitch_points)
 
     if len(points) < 2:
         print("Not enough points to make stitches.")

@@ -31,3 +31,18 @@ def densify_points(points: List[Tuple[float, float]], max_step_units: float):
 
     return dense
 
+
+def center_points(points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+    """Translate points so the design is centered around the origin."""
+
+    if not points:
+        return []
+
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+
+    cx = (min(xs) + max(xs)) / 2
+    cy = (min(ys) + max(ys)) / 2
+
+    return [(x - cx, y - cy) for x, y in points]
+
