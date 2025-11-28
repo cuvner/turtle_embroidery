@@ -4,6 +4,7 @@ import turtle
 import math
 import os
 from pyembroidery import EmbPattern, write_pes, write_png
+from embroidery_utils import densify_points
 
 
 class EmbroideryTurtle(turtle.Turtle):
@@ -44,34 +45,6 @@ class EmbroideryTurtle(turtle.Turtle):
     def backward(self, distance):
         super().backward(distance)
         self._record_point()
-
-
-def densify_points(points, max_step_units):
-    """Ensures stitches are not longer than max_step_units."""
-    if len(points) < 2:
-        return points[:]
-
-    dense = [points[0]]
-
-    for i in range(1, len(points)):
-        x0, y0 = points[i - 1]
-        x1, y1 = points[i]
-        dx = x1 - x0
-        dy = y1 - y0
-
-        dist = math.hypot(dx, dy)
-
-        if dist <= max_step_units:
-            dense.append((x1, y1))
-        else:
-            steps = int(math.ceil(dist / max_step_units))
-            for s in range(1, steps + 1):
-                t = s / steps
-                xt = x0 + dx * t
-                yt = y0 + dy * t
-                dense.append((xt, yt))
-
-    return dense
 
 
 def export_to_embroidery(
