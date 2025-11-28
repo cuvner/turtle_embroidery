@@ -15,11 +15,15 @@ from pathlib import Path
 import ast
 from typing import Dict, Iterable, List, Tuple
 
+<<<<<<< HEAD
 <<<<<<< ours
 from embroidery_utils import center_points_with_offset, center_stitches, densify_points
 =======
 from embroidery_utils import center_points, densify_points
 >>>>>>> theirs
+=======
+from embroidery_utils import center_points, densify_points
+>>>>>>> 42433fb963af91900adc92b986d752b1418583b0
 from pyembroidery import EmbPattern, write_pes, write_png
 
 

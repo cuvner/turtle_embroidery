@@ -32,6 +32,7 @@ def densify_points(points: List[Tuple[float, float]], max_step_units: float):
     return dense
 
 
+<<<<<<< HEAD
 <<<<<<< ours
 def _calc_center(points: List[Tuple[float, float]]) -> Tuple[float, float]:
     if not points:
@@ -70,6 +71,8 @@ def center_stitches(stitches: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
 
     return [(int(round(x - cx)), int(round(y - cy))) for x, y in stitches]
 =======
+=======
+>>>>>>> 42433fb963af91900adc92b986d752b1418583b0
 def center_points(points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
     """Translate points so their bounding box is centered on the origin."""
 
@@ -84,4 +87,7 @@ def center_points(points: List[Tuple[float, float]]) -> List[Tuple[float, float]
 
     return [(x - center_x, y - center_y) for x, y in points]
 
+<<<<<<< HEAD
 >>>>>>> theirs
+=======
+>>>>>>> 42433fb963af91900adc92b986d752b1418583b0

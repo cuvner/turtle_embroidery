@@ -4,11 +4,15 @@ import turtle
 import math
 import os
 from pyembroidery import EmbPattern, write_pes, write_png
+<<<<<<< HEAD
 <<<<<<< ours
 from embroidery_utils import center_points, center_stitches, densify_points
 =======
 from embroidery_utils import center_points, densify_points
 >>>>>>> theirs
+=======
+from embroidery_utils import center_points, densify_points
+>>>>>>> 42433fb963af91900adc92b986d752b1418583b0
 
 
 class EmbroideryTurtle(turtle.Turtle):
