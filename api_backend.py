@@ -1,30 +1,16 @@
 # api_backend.py
 
-"""Headless embroidery helpers for the web API.
-
-This file turns a small set of turtle-like commands into stitched points and
-returns PES/PNG bytes for download.
-"""
+"""Headless embroidery helpers for the web API."""
 
 import base64
 import math
-import os
-import tempfile
 from dataclasses import dataclass
-from pathlib import Path
-import ast
 from typing import Dict, Iterable, List, Tuple
 
-<<<<<<< HEAD
-<<<<<<< ours
-from embroidery_utils import center_points_with_offset, center_stitches, densify_points
-=======
-from embroidery_utils import center_points, densify_points
->>>>>>> theirs
-=======
-from embroidery_utils import center_points, densify_points
->>>>>>> 42433fb963af91900adc92b986d752b1418583b0
-from pyembroidery import EmbPattern, write_pes, write_png
+import ast
+from pyembroidery import EmbPattern
+
+from test_class_pyembr import PyEmbroideryBuilder
 
 
 @dataclass
@@ -197,6 +183,13 @@ def run_commands(commands: Iterable[Dict]) -> List[Tuple[float, float]]:
     return vt.points
 
 
+def _build_with_builder(points: List[Tuple[float, float]], scale_mm: float, max_stitch_mm: float) -> PyEmbroideryBuilder:
+    builder = PyEmbroideryBuilder(scale_mm=scale_mm, max_stitch_mm=max_stitch_mm)
+    builder.points = points
+    builder.build_pattern()
+    return builder
+
+
 def points_to_outputs(
     points: List[Tuple[float, float]],
     scale_mm: float,
@@ -204,44 +197,17 @@ def points_to_outputs(
 ) -> Dict[str, object]:
     """Convert points to PES/PNG bytes and stitch metadata."""
 
-    centered_points, center_offset = center_points_with_offset(points)
+    builder = _build_with_builder(points, scale_mm=scale_mm, max_stitch_mm=max_stitch_mm)
+    pes_bytes, png_bytes = builder.export_bytes()
 
-    if len(centered_points) < 2:
-        raise ValueError("At least two points are required to make stitches")
-
-    centered_points = center_points(points)
-
-    max_step_units = max_stitch_mm / scale_mm
-    dense_points = densify_points(centered_points, max_step_units=max_step_units)
-
-    stitches = []
-    for x, y in dense_points:
-        ex = int(x * scale_mm)
-        ey = int(-y * scale_mm)
-        stitches.append((ex, ey))
-
-    centered_stitches = center_stitches(stitches)
-
-    pattern = EmbPattern()
-    pattern.add_block(centered_stitches)
-    pattern.move_center_to_origin()
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        pes_path = os.path.join(tmpdir, "design.pes")
-        png_path = os.path.join(tmpdir, "design.png")
-
-        write_pes(pattern, pes_path)
-        write_png(pattern, png_path)
-
-        pes_bytes = Path(pes_path).read_bytes()
-        png_bytes = Path(png_path).read_bytes()
+    pattern: EmbPattern = builder.ensure_pattern()
 
     return {
         "pes_base64": base64.b64encode(pes_bytes).decode("ascii"),
         "png_base64": base64.b64encode(png_bytes).decode("ascii"),
-        "stitch_count": len(centered_stitches),
-        "center_offset": {"x": center_offset[0], "y": center_offset[1]},
-        "centered_points": [[x, y] for x, y in centered_points],
+        "stitch_count": len(getattr(pattern, "stitches", [])),
+        "center_offset": {"x": builder.center_offset[0], "y": builder.center_offset[1]},
+        "centered_points": [[x, y] for x, y in builder.centered_points],
     }
 
 
