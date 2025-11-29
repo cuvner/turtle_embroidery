@@ -1,18 +1,12 @@
 # embroidery_turtle.py
 
-import turtle
-import math
 import os
-from pyembroidery import EmbPattern, write_pes, write_png
-<<<<<<< HEAD
-<<<<<<< ours
+import turtle
+from typing import Tuple
+
+from pyembroidery import END, JUMP, EmbPattern, write_pes, write_png
+
 from embroidery_utils import center_points, center_stitches, densify_points
-=======
-from embroidery_utils import center_points, densify_points
->>>>>>> theirs
-=======
-from embroidery_utils import center_points, densify_points
->>>>>>> 42433fb963af91900adc92b986d752b1418583b0
 
 
 class EmbroideryTurtle(turtle.Turtle):
@@ -21,6 +15,7 @@ class EmbroideryTurtle(turtle.Turtle):
     Coordinates are in 'turtle units'. A scale factor will convert
     them to millimetres during export.
     """
+
     def __init__(self):
         super().__init__()
         self.record = False
@@ -55,17 +50,91 @@ class EmbroideryTurtle(turtle.Turtle):
         self._record_point()
 
 
+class TurtleEmbroidery:
+    """Helpers for preparing :class:`EmbPattern` objects for export."""
+
+    @staticmethod
+    def center_pattern(pattern: EmbPattern) -> EmbPattern:
+        pattern.move_center_to_origin()
+        return pattern
+
+    @staticmethod
+    def remove_trailing_jumps(pattern: EmbPattern) -> EmbPattern:
+        """Strip jump commands from the tail of the pattern."""
+
+        while getattr(pattern, "stitches", []):
+            command = pattern.stitches[-1][0]
+            if command == JUMP:
+                pattern.stitches.pop()
+            else:
+                break
+
+        return pattern
+
+    @staticmethod
+    def finish(pattern: EmbPattern) -> EmbPattern:
+        """Finalize a pattern by centering, trimming, and appending END."""
+
+        TurtleEmbroidery.center_pattern(pattern)
+        TurtleEmbroidery.remove_trailing_jumps(pattern)
+
+        stitches = getattr(pattern, "stitches", [])
+        if stitches:
+            last_command = stitches[-1][0]
+        else:
+            last_command = None
+
+        if last_command != END:
+            pattern.add_stitch_absolute(END, 0, 0)
+
+        return pattern
+
+
+def export_pattern(
+    pattern: EmbPattern,
+    pes_filename: str = "design.pes",
+    png_filename: str = "design.png",
+    show_preview: bool = True,
+):
+    """Write a finished pattern to PES/PNG, ensuring it ends cleanly."""
+
+    stitches = getattr(pattern, "stitches", [])
+    if not stitches:
+        print("No stitches to export.")
+        return
+
+    last = pattern.get_stitch(-1) if hasattr(pattern, "get_stitch") else stitches[-1]
+    last_command = getattr(last, "command", last[0])
+    if last_command != END:
+        pattern.add_stitch_absolute(END, 0, 0)
+
+    write_pes(pattern, pes_filename)
+    write_png(pattern, png_filename)
+
+    print(f"Saved PES : {os.path.abspath(pes_filename)}")
+    print(f"Saved PNG : {os.path.abspath(png_filename)}")
+    print(f"Stitches  : {len(pattern.stitches)}")
+
+    if show_preview:
+        try:
+            from PIL import Image
+
+            Image.open(png_filename).show()
+        except Exception:
+            pass
+
+
 def export_to_embroidery(
     t: EmbroideryTurtle,
-    scale_mm=1.0,                # <--- NEW scaling factor
-    max_stitch_mm=3.0,
-    pes_filename="design.pes",
-    png_filename="design.png",
-    show_preview=True,
+    scale_mm: float = 1.0,
+    max_stitch_mm: float = 3.0,
+    pes_filename: str = "design.pes",
+    png_filename: str = "design.png",
+    show_preview: bool = True,
 ):
-    """Convert turtle units → mm using scale_mm."""
+    """Convert turtle units → mm using ``scale_mm`` and export."""
 
-    points = center_points(t.stitch_points)
+    points = t.stitch_points
 
     if len(points) < 2:
         print("Not enough points to make stitches.")
@@ -73,33 +142,23 @@ def export_to_embroidery(
 
     centered_points = center_points(points)
 
-    # Convert max stitch length (mm) → turtle units
     max_step_units = max_stitch_mm / scale_mm
-
     dense_points = densify_points(centered_points, max_step_units=max_step_units)
 
-    stitches = []
+    stitch_list: list[Tuple[int, int]] = []
     for x, y in dense_points:
         ex = int(x * scale_mm)
         ey = int(-y * scale_mm)  # invert y
-        stitches.append((ex, ey))
-
-    centered_stitches = center_stitches(stitches)
+        stitch_list.append((ex, ey))
+    stitches = center_stitches(stitch_list)
 
     pattern = EmbPattern()
-    pattern.add_block(centered_stitches)
-    pattern.move_center_to_origin()
+    pattern.add_block(list(stitches))
 
-    write_pes(pattern, pes_filename)
-    write_png(pattern, png_filename)
-
-    print(f"Saved PES : {os.path.abspath(pes_filename)}")
-    print(f"Saved PNG : {os.path.abspath(png_filename)}")
-    print(f"Stitches  : {len(centered_stitches)}")
-
-    if show_preview:
-        try:
-            from PIL import Image
-            Image.open(png_filename).show()
-        except:
-            pass
+    pattern = TurtleEmbroidery.finish(pattern)
+    export_pattern(
+        pattern,
+        pes_filename=pes_filename,
+        png_filename=png_filename,
+        show_preview=show_preview,
+    )
