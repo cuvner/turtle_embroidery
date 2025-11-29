@@ -2,11 +2,11 @@
 
 import os
 import turtle
-from typing import Tuple
 
-from pyembroidery import END, JUMP, EmbPattern, write_pes, write_png
+from pyembroidery import END, EmbPattern, write_pes, write_png
 
-from embroidery_utils import center_points, center_stitches, densify_points
+from embroidery_utils import finish_pattern, remove_trailing_jumps
+from test_class_pyembr import PyEmbroideryBuilder
 
 
 class EmbroideryTurtle(turtle.Turtle):
@@ -62,32 +62,13 @@ class TurtleEmbroidery:
     def remove_trailing_jumps(pattern: EmbPattern) -> EmbPattern:
         """Strip jump commands from the tail of the pattern."""
 
-        while getattr(pattern, "stitches", []):
-            command = pattern.stitches[-1][0]
-            if command == JUMP:
-                pattern.stitches.pop()
-            else:
-                break
-
-        return pattern
+        return remove_trailing_jumps(pattern)
 
     @staticmethod
     def finish(pattern: EmbPattern) -> EmbPattern:
         """Finalize a pattern by centering, trimming, and appending END."""
 
-        TurtleEmbroidery.center_pattern(pattern)
-        TurtleEmbroidery.remove_trailing_jumps(pattern)
-
-        stitches = getattr(pattern, "stitches", [])
-        if stitches:
-            last_command = stitches[-1][0]
-        else:
-            last_command = None
-
-        if last_command != END:
-            pattern.add_stitch_absolute(END, 0, 0)
-
-        return pattern
+        return finish_pattern(pattern)
 
 
 def export_pattern(
@@ -110,6 +91,40 @@ def export_pattern(
 
     write_pes(pattern, pes_filename)
     write_png(pattern, png_filename)
+
+    print(f"Saved PES : {os.path.abspath(pes_filename)}")
+    print(f"Saved PNG : {os.path.abspath(png_filename)}")
+    print(f"Stitches  : {len(pattern.stitches)}")
+
+    if show_preview:
+        try:
+            from PIL import Image
+
+            Image.open(png_filename).show()
+        except Exception:
+            pass
+
+
+def export_to_embroidery(
+    t: EmbroideryTurtle,
+    scale_mm: float = 1.0,
+    max_stitch_mm: float = 3.0,
+    pes_filename: str = "design.pes",
+    png_filename: str = "design.png",
+    show_preview: bool = True,
+):
+    """Convert turtle units → mm using ``scale_mm`` and export."""
+
+    builder = PyEmbroideryBuilder(scale_mm=scale_mm, max_stitch_mm=max_stitch_mm)
+    builder.points = t.stitch_points
+
+    try:
+        pattern = builder.build_pattern()
+    except ValueError:
+        print("Not enough points to make stitches.")
+        return
+
+    builder.export_files(pes_filename, png_filename)
 
     print(f"Saved PES : {os.path.abspath(pes_filename)}")
     print(f"Saved PNG : {os.path.abspath(png_filename)}")

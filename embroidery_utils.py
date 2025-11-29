@@ -3,9 +3,12 @@
 import math
 from typing import List, Tuple
 
+from pyembroidery import END, JUMP, EmbPattern
+
 
 def densify_points(points: List[Tuple[float, float]], max_step_units: float):
-    """Ensures stitches are not longer than max_step_units."""
+    """Ensure stitched segments do not exceed ``max_step_units`` length."""
+
     if len(points) < 2:
         return points[:]
 
@@ -32,28 +35,32 @@ def densify_points(points: List[Tuple[float, float]], max_step_units: float):
     return dense
 
 
-<<<<<<< HEAD
-<<<<<<< ours
 def _calc_center(points: List[Tuple[float, float]]) -> Tuple[float, float]:
     if not points:
         return (0.0, 0.0)
+
     xs = [p[0] for p in points]
     ys = [p[1] for p in points]
-    cx = (min(xs) + max(xs)) / 2
-    cy = (min(ys) + max(ys)) / 2
+    cx = (min(xs) + max(xs)) / 2.0
+    cy = (min(ys) + max(ys)) / 2.0
     return (cx, cy)
 
 
 def center_points(points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
-    """Translate points so the design is centered around the origin."""
+    """Translate points so their bounding box is centered on the origin."""
+
     if not points:
         return []
+
     cx, cy = _calc_center(points)
     return [(x - cx, y - cy) for x, y in points]
 
 
-def center_points_with_offset(points: List[Tuple[float, float]]) -> Tuple[List[Tuple[float, float]], Tuple[float, float]]:
+def center_points_with_offset(
+    points: List[Tuple[float, float]]
+) -> Tuple[List[Tuple[float, float]], Tuple[float, float]]:
     """Return centered points along with the offset that was applied."""
+
     centered = center_points(points)
     cx, cy = _calc_center(points)
     return centered, (cx, cy)
@@ -61,6 +68,7 @@ def center_points_with_offset(points: List[Tuple[float, float]]) -> Tuple[List[T
 
 def center_stitches(stitches: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     """Center integer stitches around (0,0) to keep PES previews aligned."""
+
     if not stitches:
         return []
 
@@ -70,24 +78,30 @@ def center_stitches(stitches: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     cy = (min(ys) + max(ys)) / 2.0
 
     return [(int(round(x - cx)), int(round(y - cy))) for x, y in stitches]
-=======
-=======
->>>>>>> 42433fb963af91900adc92b986d752b1418583b0
-def center_points(points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
-    """Translate points so their bounding box is centered on the origin."""
 
-    if not points:
-        return []
 
-    xs = [p[0] for p in points]
-    ys = [p[1] for p in points]
+def remove_trailing_jumps(pattern: EmbPattern) -> EmbPattern:
+    """Strip jump commands from the tail of the pattern."""
 
-    center_x = (min(xs) + max(xs)) / 2.0
-    center_y = (min(ys) + max(ys)) / 2.0
+    while getattr(pattern, "stitches", []):
+        command = pattern.stitches[-1][0]
+        if command == JUMP:
+            pattern.stitches.pop()
+        else:
+            break
 
-    return [(x - center_x, y - center_y) for x, y in points]
+    return pattern
 
-<<<<<<< HEAD
->>>>>>> theirs
-=======
->>>>>>> 42433fb963af91900adc92b986d752b1418583b0
+
+def finish_pattern(pattern: EmbPattern) -> EmbPattern:
+    """Finalize a pattern by centering, trimming, and appending END."""
+
+    pattern.move_center_to_origin()
+    remove_trailing_jumps(pattern)
+
+    stitches = getattr(pattern, "stitches", [])
+    last_command = stitches[-1][0] if stitches else None
+    if last_command != END:
+        pattern.add_stitch_absolute(END, 0, 0)
+
+    return pattern
