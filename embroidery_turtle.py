@@ -137,3 +137,43 @@ def export_to_embroidery(
             Image.open(png_filename).show()
         except Exception:
             pass
+
+
+def export_to_embroidery(
+    t: EmbroideryTurtle,
+    scale_mm: float = 1.0,
+    max_stitch_mm: float = 3.0,
+    pes_filename: str = "design.pes",
+    png_filename: str = "design.png",
+    show_preview: bool = True,
+):
+    """Convert turtle units → mm using ``scale_mm`` and export."""
+
+    points = t.stitch_points
+
+    if len(points) < 2:
+        print("Not enough points to make stitches.")
+        return
+
+    centered_points = center_points(points)
+
+    max_step_units = max_stitch_mm / scale_mm
+    dense_points = densify_points(centered_points, max_step_units=max_step_units)
+
+    stitch_list: list[Tuple[int, int]] = []
+    for x, y in dense_points:
+        ex = int(x * scale_mm)
+        ey = int(-y * scale_mm)  # invert y
+        stitch_list.append((ex, ey))
+    stitches = center_stitches(stitch_list)
+
+    pattern = EmbPattern()
+    pattern.add_block(list(stitches))
+
+    pattern = TurtleEmbroidery.finish(pattern)
+    export_pattern(
+        pattern,
+        pes_filename=pes_filename,
+        png_filename=png_filename,
+        show_preview=show_preview,
+    )
