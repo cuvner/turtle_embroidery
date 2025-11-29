@@ -11,8 +11,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from embroidery_utils import center_points_with_offset, center_stitches, densify_points
-from pyembroidery import END, JUMP, EmbPattern, write_pes, write_png
+from embroidery_utils import (
+    center_points_with_offset,
+    center_stitches,
+    densify_points,
+    finish_pattern,
+)
+from pyembroidery import EmbPattern, write_pes, write_png
 
 
 @dataclass
@@ -24,28 +29,6 @@ class PyEmbroideryBuilder:
     center_offset: Tuple[float, float] = (0.0, 0.0)
     stitches: List[Tuple[int, int]] = field(default_factory=list)
     pattern: Optional[EmbPattern] = None
-
-    @staticmethod
-    def _remove_trailing_jumps(pattern: EmbPattern) -> EmbPattern:
-        while getattr(pattern, "stitches", []):
-            command = pattern.stitches[-1][0]
-            if command == JUMP:
-                pattern.stitches.pop()
-            else:
-                break
-        return pattern
-
-    @staticmethod
-    def finish_pattern(pattern: EmbPattern) -> EmbPattern:
-        pattern.move_center_to_origin()
-        PyEmbroideryBuilder._remove_trailing_jumps(pattern)
-
-        stitches = getattr(pattern, "stitches", [])
-        last_command = stitches[-1][0] if stitches else None
-        if last_command != END:
-            pattern.add_stitch_absolute(END, 0, 0)
-
-        return pattern
 
     def _build_stitches(self) -> List[Tuple[int, int]]:
         if len(self.points) < 2:
@@ -70,7 +53,7 @@ class PyEmbroideryBuilder:
         centered_stitches = self._build_stitches()
         pattern = EmbPattern()
         pattern.add_block(centered_stitches)
-        self.pattern = self.finish_pattern(pattern)
+        self.pattern = finish_pattern(pattern)
         return self.pattern
 
     def ensure_pattern(self) -> EmbPattern:

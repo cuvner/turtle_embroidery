@@ -3,6 +3,8 @@
 import math
 from typing import List, Tuple
 
+from pyembroidery import END, JUMP, EmbPattern
+
 
 def densify_points(points: List[Tuple[float, float]], max_step_units: float):
     """Ensure stitched segments do not exceed ``max_step_units`` length."""
@@ -76,3 +78,30 @@ def center_stitches(stitches: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     cy = (min(ys) + max(ys)) / 2.0
 
     return [(int(round(x - cx)), int(round(y - cy))) for x, y in stitches]
+
+
+def remove_trailing_jumps(pattern: EmbPattern) -> EmbPattern:
+    """Strip jump commands from the tail of the pattern."""
+
+    while getattr(pattern, "stitches", []):
+        command = pattern.stitches[-1][0]
+        if command == JUMP:
+            pattern.stitches.pop()
+        else:
+            break
+
+    return pattern
+
+
+def finish_pattern(pattern: EmbPattern) -> EmbPattern:
+    """Finalize a pattern by centering, trimming, and appending END."""
+
+    pattern.move_center_to_origin()
+    remove_trailing_jumps(pattern)
+
+    stitches = getattr(pattern, "stitches", [])
+    last_command = stitches[-1][0] if stitches else None
+    if last_command != END:
+        pattern.add_stitch_absolute(END, 0, 0)
+
+    return pattern

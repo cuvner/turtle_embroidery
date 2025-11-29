@@ -3,8 +3,9 @@
 import os
 import turtle
 
-from pyembroidery import END, JUMP, EmbPattern, write_pes, write_png
+from pyembroidery import END, EmbPattern, write_pes, write_png
 
+from embroidery_utils import finish_pattern, remove_trailing_jumps
 from test_class_pyembr import PyEmbroideryBuilder
 
 
@@ -61,20 +62,13 @@ class TurtleEmbroidery:
     def remove_trailing_jumps(pattern: EmbPattern) -> EmbPattern:
         """Strip jump commands from the tail of the pattern."""
 
-        while getattr(pattern, "stitches", []):
-            command = pattern.stitches[-1][0]
-            if command == JUMP:
-                pattern.stitches.pop()
-            else:
-                break
-
-        return pattern
+        return remove_trailing_jumps(pattern)
 
     @staticmethod
     def finish(pattern: EmbPattern) -> EmbPattern:
         """Finalize a pattern by centering, trimming, and appending END."""
 
-        return PyEmbroideryBuilder.finish_pattern(pattern)
+        return finish_pattern(pattern)
 
 
 def export_pattern(
